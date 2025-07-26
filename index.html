@@ -356,7 +356,6 @@
 </head>
 <body>
     <div class="container">
-        <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">V</div>
@@ -372,7 +371,6 @@
             </div>
         </div>
 
-        <!-- Main Chat Area -->
         <div class="main-chat">
             <div class="chat-header">
                 <div class="chat-title">
@@ -428,10 +426,9 @@
         </div>
     </div>
 
-    <!-- Script Botpress -->
     <script src="https://cdn.botpress.cloud/webchat/v1/inject.js"></script>
     <script>
-        // Il tuo Client ID reale di Botpress
+        // SOSTITUISCI 'YOUR_CLIENT_ID' CON IL TUO CLIENT ID REALE
         const CLIENT_ID = 'eebca33d-d6e6-4c78-a034-ae16230a43f1';
         
         let chatInitialized = false;
@@ -457,6 +454,17 @@
             
             botpressReady = true;
             console.log('Botpress inizializzato correttamente');
+
+            // Listen for messages from Botpress webchat (example)
+            window.botpressWebChat.onEvent(
+                (event) => {
+                    if (event.type === 'webchat/botMessage') {
+                        hideTypingIndicator();
+                        addMessage(event.payload.text, 'assistant');
+                    }
+                },
+                ['webchat/botMessage']
+            );
         }
 
         // Funzioni per l'interfaccia
@@ -473,9 +481,8 @@
                 showTypingIndicator();
                 
                 // Invia messaggio a Botpress
-                setTimeout(() => {
-                    sendToBotpress(message);
-                }, 500);
+                // Non usare setTimeout qui, invia direttamente il messaggio a Botpress
+                sendToBotpress(message);
             } else if (!botpressReady) {
                 alert('Verolepo Assistant si sta ancora caricando. Riprova tra un momento.');
             }
@@ -483,23 +490,9 @@
 
         function sendToBotpress(message) {
             if (window.botpressWebChat) {
-                // Qui dovresti implementare l'invio del messaggio a Botpress
-                // Per ora simuliamo una risposta
-                setTimeout(() => {
-                    hideTypingIndicator();
-                    addMessage(getSimulatedResponse(message), 'assistant');
-                }, 1500);
+                // Invia il messaggio a Botpress
+                window.botpressWebChat.sendText(message);
             }
-        }
-
-        function getSimulatedResponse(message) {
-            const responses = [
-                "Ciao! Sono Verolepo Assistant. Grazie per aver usato questa interfaccia personalizzata! Per connettere il vero chatbot, assicurati di aver inserito il tuo Client ID di Botpress.",
-                "Questa è un'interfaccia di esempio. Una volta configurato correttamente il Client ID, potrai chattare con il vero Verolepo Assistant!",
-                "Perfetto! L'interfaccia funziona. Ora sostituisci 'YOUR_CLIENT_ID' nel codice con il tuo vero Client ID di Botpress per attivare il chatbot.",
-                "Mi piace questa interfaccia! Ricorda di configurare il Client ID per abilitare le funzionalità complete di Verolepo Assistant."
-            ];
-            return responses[Math.floor(Math.random() * responses.length)];
         }
 
         function sendSuggestion(text) {
@@ -526,7 +519,13 @@
             
             const content = document.createElement('div');
             content.className = 'message-content';
-            content.textContent = text;
+            // Per gestire potenziali HTML nel messaggio del bot, usa innerHTML. 
+            // Per i messaggi dell'utente è più sicuro usare textContent.
+            if (sender === 'assistant') {
+                content.innerHTML = text; 
+            } else {
+                content.textContent = text;
+            }
             
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(content);
@@ -537,28 +536,31 @@
 
         function showTypingIndicator() {
             const messagesContainer = document.getElementById('chatMessages');
-            const typingDiv = document.createElement('div');
-            typingDiv.className = 'message assistant';
-            typingDiv.id = 'typingIndicator';
-            
-            const avatar = document.createElement('div');
-            avatar.className = 'message-avatar';
-            avatar.textContent = 'V';
-            
-            const content = document.createElement('div');
-            content.className = 'message-content';
-            content.innerHTML = `
-                <div class="typing-indicator">
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
-                </div>
-            `;
-            
-            typingDiv.appendChild(avatar);
-            typingDiv.appendChild(content);
-            messagesContainer.appendChild(typingDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            // Evita di aggiungere l'indicatore se è già presente
+            if (!document.getElementById('typingIndicator')) {
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'message assistant';
+                typingDiv.id = 'typingIndicator';
+                
+                const avatar = document.createElement('div');
+                avatar.className = 'message-avatar';
+                avatar.textContent = 'V';
+                
+                const content = document.createElement('div');
+                content.className = 'message-content';
+                content.innerHTML = `
+                    <div class="typing-indicator">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                `;
+                
+                typingDiv.appendChild(avatar);
+                typingDiv.appendChild(content);
+                messagesContainer.appendChild(typingDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
         }
 
         function hideTypingIndicator() {
@@ -610,6 +612,10 @@
                     </div>
                 </div>
             `;
+            // Resetta lo stato del Botpress o avvia una nuova sessione se necessario
+            if (window.botpressWebChat) {
+                window.botpressWebChat.sendEvent({ type: 'webchat/reset' }); // Resetta la conversazione lato Botpress
+            }
         }
     </script>
 </body>
